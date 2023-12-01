@@ -1,3 +1,4 @@
+from pickle import NONE
 import launchpad_py as launchpad
 import time, ast, os
 from pygame import mixer
@@ -8,8 +9,6 @@ mixer.init()
 """
 ================MENU FUNCTIONS============================
 """
-
-
 def initmenu():
     """
     Returns 2 Lists:
@@ -67,13 +66,14 @@ def setlevel(value, difset, file):
     """
     FILE[0] = file
     COVERJPG[0] = infolist[value[1]]['_coverImageFilename']
-    d1.update_elements(difset)
+    d1.update_items(difset)
     print('Filename: {}'.format(file))
     print('Diffs: {}'.format(difset))
     if mixer.music.get_busy():
         mixer.music.unload()
-    mixer.music.load('Songs/{}/{}'.format(file, infolist[value[1]]['_songFilename']))
+    mixer.music.load('Songs/{}/{}'.format(file, infolist[value[1]]['_songFilename']))  
     mixer.music.play(start=infolist[value[1]]['_previewStartTime'], fade_ms= 1000)
+    mixer.music.set_volume(0.2)
     pass
 
 
@@ -86,6 +86,19 @@ def startsong():
     print('Selection: {}\n{}'.format(FILE[0], DIFCHOICE[0]))
     playSong('Songs/{}'.format(FILE[0]), DIFCHOICE[0], lp)
     pass
+
+def endSong(perfect, good, ok, bad, nnotes):
+    endResult = pygame_menu.Menu('Song Completed!', 350, 450, theme=main_menu_theme, onclose=pygame_menu.events.CLOSE)
+
+    endResult.add.label(title='Perfect notes: ' + str(perfect));
+    endResult.add.label(title='Good notes: ' + str(good));
+    endResult.add.label(title='Ok notes: ' + str(ok));
+    endResult.add.label(title='Bad notes: ' + str(bad));
+    missedNotes = nnotes - (perfect + good + ok + bad)
+    endResult.add.label(title='Missed notes: ' + str(missedNotes));
+    endResult.add.button('Song Selection', pygame_menu.events.CLOSE)
+
+    endResult.mainloop(surface, main_background)
 
 """
 ==============Beatsaber data Conversion functions===========
@@ -140,9 +153,9 @@ def beatsaberConverter(folder, dif):
         else:
             xpos = (i['_lineIndex'])*2
         if i['_type'] == 0:
-            r,g,b = 63,0,20
+            r,g,b = 63,0,0
         else:
-            r,g,b, = 1,10,63
+            r,g,b, = 0,0,63
 
         conversion.append([xpos, ypos, round(i['_time']*16,0), r,g,b])
         # Prescalar = 16, effects how early lights start glowing before the note,
@@ -185,21 +198,6 @@ def initBeatmap(notemap):
             beatmap.append([[i[0], i[1], i[3], i[4], i[5]], i[2]])
             beatmap.append([[i[0], i[1], 0, 0, 0], i[2] + 1])
 
-            #beatmap.append([[[i[0]+1, i[1], i[3], i[4]+10*j, i[5]]], i[2]-j])
-            #beatmap.append([[[i[0]-1, i[1], i[3], i[4]+10*j, i[5]]], i[2]-j])
-            #beatmap.append([[[i[0], i[1]+1, i[3], i[4]+10*j, i[5]]], i[2]-j])
-            #beatmap.append([[[i[0], i[1]-j, round(63/j), round(63/j), round(63/j)]], i[2]-j-1])
-
-            # beatmap.append([[[i[0]+j, i[1], 0, 0, 0]], i[2]+1])
-            # beatmap.append([[[i[0], i[1]+j, 0, 0, 0]], i[2]+1])
-            #beatmap.append([[[i[0], i[1]-j, 0, 0, 0]], i[2]+1-j])
-            # beatmap.append([[[i[0]-j, i[1], 0, 0, 0]], i[2]+1])
-
-
-        # beatmap.append([[[i[0]+1, i[1], 0, 0, 0]], i[2]+1])
-        # beatmap.append([[[i[0]-1, i[1], 0, 0, 0]], i[2]+1])
-        # beatmap.append([[[i[0], i[1]+1, 0, 0, 0]], i[2]+1])
-        # beatmap.append([[[i[0], i[1]-1, 0, 0, 0]], i[2]+1])
     for e in range(0,round(notemap[len(notemap)-1][2]), 16):
         """
         pulsing circle button colors
@@ -207,8 +205,6 @@ def initBeatmap(notemap):
         for k in range(0, 8):
             for f in range(0,9):
                 beatmap.append([[k, 0, round(30/9*f), round(30/9*f), round(30/9*f)], e+8-f])
-                #beatmap.append([[[k, 0, 0, 0, 0]], e + 8])
-                #beatmap.append([[[8, k+1, 63, 63, 63]], e])
                 beatmap.append([[8, k+1, round(30/9*f), round(30/9*f), round(30/9*f)], e + 8-f])
 
     """
@@ -217,19 +213,7 @@ def initBeatmap(notemap):
     beatmap.sort(key=sortKeyb)
     notetime.sort(key=sortKeyt)
 
-    #c = 0
-    #stop = False
-    # while stop is False:
-    #     a = beatmap[c][0]
-    #     if beatmap[c][1] == beatmap[c+1][1]:
-    #         beatmap[c][0] = beatmap[c][0].append(beatmap[c+1][0][0])
-    #         beatmap[c][0] = a
-    #         del beatmap[c+1]
-    #     if len(beatmap) >= c:
-    #         stop = True
-    #     c = c+1
     return beatmap, notetime
-
 
 
 """
@@ -241,10 +225,30 @@ def initPad():
     Sets up launchpad using launchpad_py
     Currently supports LaunchpadMk2(), can be edited, but may require user input troubleshooting
     :Resources: https://github.com/FMMT666/launchpad.py
-    :return:
+    :return: Launchpad instance
     """
-    lp = launchpad.LaunchpadMk2()
-    lp.Open()
+
+    if launchpad.LaunchpadMk2().Check(0):
+        lp = launchpad.LaunchpadMk2()
+        if lp.Open(0):
+            print("Launchpad Mk2")
+            mode = "Mk2"
+
+    elif launchpad.LaunchpadMiniMk3().Check(1):
+        lp = launchpad.LaunchpadMiniMk3()
+        if lp.Open(1):
+            print("Launchpad Mini Mk3")
+            mode = "Pro"
+    
+    elif launchpad.LaunchpadLPX().Check(1):
+        lp = launchpad.LaunchpadLPX()
+        if lp.Open(1):
+            print("Launchpad X")
+            mode = "X"
+
+    if mode is None:
+        print("Did not find any Launchpads, meh...")
+
     lp.ButtonFlush()
     lp.LedCtrlString('OK', 63, 3, 63, direction=-1, waitms=0)
     return lp
@@ -260,14 +264,15 @@ def checkClose(curnotes, curbeat, x, y):
     :return: string 'rating'
     """
     for note in curnotes:
+        print(f"PRESSED {x} {y}. Checking note: {note}")
         if note[0] == x and note[1] == y:
-            if curbeat - 1 <= note[2] <= curbeat + 1:
+            if curbeat - 3 <= note[2] <= curbeat + 3:
                 return 'perfect'
-            elif curbeat - 3 <= note[2] <= curbeat + 3:
-                return 'good'
             elif curbeat - 5 <= note[2] <= curbeat + 5:
-                return 'ok'
+                return 'good'
             elif curbeat - 7 <= note[2] <= curbeat + 7:
+                return 'ok'
+            elif curbeat - 10 <= note[2] <= curbeat + 10:
                 return 'bad'
     return ''
 
@@ -283,6 +288,11 @@ def playSong(folder, DIFCHOICE, lp):
     """
     restart = True
     while restart:
+        perfect = 0
+        good = 0
+        ok = 0
+        bad = 0
+        
         notes = beatsaberConverter('Songs/{}'.format(FILE[0]), DIFCHOICE)
 
         file = open('{}/info.dat'.format(folder))
@@ -292,10 +302,11 @@ def playSong(folder, DIFCHOICE, lp):
         file.close()
 
         lightmap, notemap = initBeatmap(notes)
-
+        nnotes = len(notemap)
         restart = False
         mixer.music.load(songfile)
         mixer.music.play()
+        mixer.music.set_volume(0.2)
         time.sleep(info['_songTimeOffset']/1000)
 
         startTime = time.perf_counter()
@@ -307,30 +318,35 @@ def playSong(folder, DIFCHOICE, lp):
             curnotes = [x for x in notemap if x[2] <= curbeat+7]
 
             for lights in curlight:
-                lp.LedCtrlXY(lights[0][0], lights[0][1], lights[0][2], lights[0][3], lights[0][4])
+                lp.LedCtrlXY(lights[0][0], lights[0][1], lights[0][2]+10, lights[0][3]+10, lights[0][4]+10)
                 lightmap.remove(lights)
 
             if button != []:
+                print(f"BUTTON PRESSED: {button[0:3]}")
                 """
                 Checks if user presses a button
                 """
                 x = button[0]
                 y = button[1]
                 r, g, b = 0, 0, 0
-                if button[2] == 127:
+                if button[2]:
                     status = checkClose(curnotes, curbeat, x, y)
                     lp.LedCtrlXY(x, y, 63, 63, 63)
                     """
                     chooses 'hit' color based on timing
                     """
                     if status == 'perfect':
-                        r,g,b = 10, 17, 31
+                        r,g,b = 10, 17, 35
+                        perfect += 1
                     if status == 'good':
                         r,g,b = 7, 31, 7
+                        good += 1
                     elif status == 'ok':
                         r, g, b = 31, 30, 5
+                        ok += 1
                     elif status == 'bad':
-                        r, g, b = 31, 5, 5
+                        r, g, b = 35, 1, 1
+                        bad += 1
 
                     lp.LedCtrlXY(x + 1, y, r, g, b)
                     lp.LedCtrlXY(x - 1, y, r, g, b)
@@ -368,10 +384,10 @@ def playSong(folder, DIFCHOICE, lp):
                 lp.LedCtrlString('l', 63, 63, 63, direction=-1, waitms=0)
                 lp.LedCtrlString('l', 63, 63, 63, direction=1, waitms=0)
                 lp.LedAllOn(0)
-
-
+    endSong(perfect, good, ok, bad, nnotes)
+            
 # Press the green button in the gutter to run the script.
-if __name__ == '__main__':
+if __name__ == '__main__': 
     DIFCHOICE = [0]
     FILE = ['0cb1b38c96b71676db359a95353dca50ba54b183']
     COVERJPG = ['cover.jpg']
@@ -385,20 +401,15 @@ if __name__ == '__main__':
     main_menu_theme = pygame_menu.themes.THEME_DARK.copy()
     main_menu_theme.set_background_color_opacity(0.4)
     main_menu_theme.widget_font=pygame_menu.font.FONT_HELVETICA
+    
+    menu = pygame_menu.Menu('Project LP', 550, 450, theme=main_menu_theme)
 
-    menu = pygame_menu.Menu(350, 450, 'Project LP', theme=main_menu_theme)
-
-    menu.add_selector('Song: ', songlist, onchange=setlevel)
-    d1 = menu.add_selector('Difficulty: ', diffs, onchange=setdif)
-    menu.add_button('START', startsong,  shadow=True, shadow_color=(0, 0, 100))
-    menu.add_button('Quit', pygame_menu.events.EXIT, align=pygame_menu.locals.ALIGN_RIGHT)
+    menu.add.selector('Song: ', songlist, onchange=setlevel)
+    d1 = menu.add.selector('Difficulty: ', diffs, onchange=setdif)
+    menu.add.button('START', startsong,  shadow_width=10, shadow_color=(0, 0, 100))
+    menu.add.button('Quit', pygame_menu.events.EXIT)
 
     pygame.display.set_caption('Project LP')
 
     lp = initPad()
     menu.mainloop(surface, main_background)
-
-
-
-
-
