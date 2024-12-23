@@ -6,7 +6,7 @@ https://bsmg.wiki/mapping/map-format.html
 https://github.com/FMMT666/launchpad.py
 https://pygame-menu.readthedocs.io/en/4.0.0/
 
-#### To run (TODO - now you just follow the To work on code section and run the python file)
+#### To run (TODO - now you just follow the "To work on code" section and run the python file)
 * Download zip
 * unzip to anywhere
 * run ProjectLP.exe
