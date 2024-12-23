@@ -19,10 +19,14 @@ def initmenu():
     """
     infolist = []
     songlist = []
+    folderlist = []
+    coverfile = []
+
     for songfolder in os.listdir('Songs'):
         file = open('Songs/{}/info.dat'.format(songfolder))
         info = ast.literal_eval(file.read())
         infolist.append(info)
+        folderlist.append(songfolder)
 
         songdifs = []
         for difsets in info['_difficultyBeatmapSets']:
@@ -31,7 +35,10 @@ def initmenu():
                     songdifs.append((dif['_difficulty'],0))
         songlist.append((info['_songName'], songdifs, songfolder))
 
-    return songlist, infolist
+    # set covertype from info file
+    coverfile.append(infolist[0]['_coverImageFilename'])
+
+    return songlist, infolist, folderlist, coverfile
 
 
 def main_background() -> None:
@@ -389,11 +396,14 @@ def playSong(folder, DIFCHOICE, lp):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__': 
     DIFCHOICE = [0]
-    FILE = ['0cb1b38c96b71676db359a95353dca50ba54b183']
-    COVERJPG = ['cover.jpg']
+    FILE = []
+    COVERJPG = []
 
     diffs = [('None', 0)]
-    songlist, infolist = initmenu()
+    songlist, infolist, folderlist, covertype = initmenu()
+
+    FILE.append(folderlist[0])
+    COVERJPG.append(covertype[0])
 
     pygame.init()
     surface = pygame.display.set_mode((600, 600))
