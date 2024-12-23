@@ -1,4 +1,3 @@
-from pickle import NONE
 import launchpad_py as launchpad
 import time, ast, os
 from pygame import mixer
@@ -19,14 +18,14 @@ def initmenu():
     """
     infolist = []
     songlist = []
-    folderlist = []
+    firstfolder = []
     coverfile = []
 
     for songfolder in os.listdir('Songs'):
         file = open('Songs/{}/info.dat'.format(songfolder))
         info = ast.literal_eval(file.read())
         infolist.append(info)
-        folderlist.append(songfolder)
+        
 
         songdifs = []
         for difsets in info['_difficultyBeatmapSets']:
@@ -35,10 +34,13 @@ def initmenu():
                     songdifs.append((dif['_difficulty'],0))
         songlist.append((info['_songName'], songdifs, songfolder))
 
+    ## Set first song in list
+    # set folder name
+    firstfolder.append(songlist[0][2])
     # set covertype from info file
     coverfile.append(infolist[0]['_coverImageFilename'])
 
-    return songlist, infolist, folderlist, coverfile
+    return songlist, infolist, firstfolder, coverfile
 
 
 def main_background() -> None:
@@ -400,9 +402,9 @@ if __name__ == '__main__':
     COVERJPG = []
 
     diffs = [('None', 0)]
-    songlist, infolist, folderlist, covertype = initmenu()
+    songlist, infolist, firstfolder, covertype = initmenu()
 
-    FILE.append(folderlist[0])
+    FILE.append(firstfolder[0])
     COVERJPG.append(covertype[0])
 
     pygame.init()
