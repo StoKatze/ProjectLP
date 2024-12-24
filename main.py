@@ -10,11 +10,15 @@ mixer.init()
 """
 def initmenu():
     """
-    Returns 2 Lists:
+    Returns 4 Lists:
     infolist contains a list of the info.dat files of each song as a dict
     songlist contains 'nameofsong', songdifficulties, 'folderofSong'
+    firstfolder contains the name of the first folder in the Songs directory (for first program start)
+    coverfile contains the name of the first song cover art (for first program start)
     :return: infoList = [song1info dict, song2infodict...]
     :return: songlist = [('songName', [('diffname', 0), ('diffname2', 0)...], 'foldername'), ...]
+    :return: firstfolder = ['firstfolderinSongdirectory']
+    :return: coverfile = ['cover.jpg']
     """
     infolist = []
     songlist = []
@@ -404,6 +408,7 @@ if __name__ == '__main__':
     diffs = [('None', 0)]
     songlist, infolist, firstfolder, covertype = initmenu()
 
+    # Set first file and cover
     FILE.append(firstfolder[0])
     COVERJPG.append(covertype[0])
 
